@@ -23,10 +23,11 @@ block* newBlock(int len);
 int blockLength(block* b);
 bool blockEmpty(block* b);
 void blockXor(block* b, block* a);
-void PartitionBytes(uint8_t* in, int inLen, int p, block** longBlocks, int* numLong, block** shortBlocks, int* numShort);
+int** PartitionBytes(uint8_t* in, int inLen, int p, block** longBlocks, int* numLong, block** shortBlocks, int* numShort);
 void addEquation(sparseMatrix* m, int* components, int numComponents, block b);
-bool matrixDetermined(sparseMatrix* m);
-void matrixReduce(sparseMatrix* m);
-uint8_t* matrixReconstruct(sparseMatrix* m, int totalLength, int lenLong, int lenShort, int numLong, int numShort);
+int* xorRow(sparseMatrix *m, int s, int *indices, size_t indices_len, block *b, size_t *new_indices_len);
+bool determined(sparseMatrix* m);
+void Reduce(sparseMatrix* m);
+uint8_t* Reconstruct(sparseMatrix* m, int totalLength, int lenLong, int lenShort, int numLong, int numShort);
 
 #endif // BLOCK_H

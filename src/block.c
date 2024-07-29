@@ -3,27 +3,24 @@
 #include <string.h>
 #include <stdbool.h>
 #include "block.h"
+#include "util.c"
 
-// 새로운 블록을 생성합니다.
+// 블록 생성
 block* newBlock(int len) {
     block* b = (block*)malloc(sizeof(block));
-    b->data = (uint8_t*)calloc(len, sizeof(uint8_t)); // 패딩으로 초기화
+    b->data = (uint8_t*)calloc(len, sizeof(uint8_t)); 
     b->length = 0;
     b->padding = len;
     return b;
 }
 
-// 블록의 총 길이를 반환합니다.
 int blockLength(block* b) {
     return b->length + b->padding;
 }
 
-// 블록이 비어 있는지 확인합니다.
 bool blockEmpty(block* b) {
     return blockLength(b) == 0;
 }
-
-// 두 블록을 XOR 연산합니다.
 void blockXor(block* b, block* a) {
     if (b->length < a->length) {
         b->data = (uint8_t*)realloc(b->data, a->length);
@@ -39,10 +36,9 @@ void blockXor(block* b, block* a) {
     }
 }
 
-// 입력 데이터를 블록으로 분할합니다.
-void PartitionBytes(uint8_t* in, int inLen, int p, block** longBlocks, int* numLong, block** shortBlocks, int* numShort) {
+int** PartitionBytes(uint8_t* in, int inLen, int p) {
     int lenLong, lenShort;
-    // 길이를 계산합니다 (partition 함수의 구현이 필요합니다)
+
     partition(inLen, p, &lenLong, &lenShort, numLong, numShort);
 
     *longBlocks = (block*)malloc((*numLong) * sizeof(block));
@@ -81,14 +77,13 @@ void PartitionBytes(uint8_t* in, int inLen, int p, block** longBlocks, int* numL
     }
 }
 
-// 행렬에 방정식을 추가합니다.
 void addEquation(sparseMatrix* m, int* components, int numComponents, block b) {
     while (numComponents > 0 && m->coeff[components[0]] != NULL) {
         int s = components[0];
         if (numComponents >= sizeof(m->coeff[s]) / sizeof(int)) {
-            components = m->xorRow(s, components, numComponents, b, &numComponents, &b);
+            components = xorRow(s, components, numComponents, &b, &numComponents, &b);
         } else {
-            // 기존 행을 새로운 행으로 교환하고, 기존 행을 줄여서 다른 곳에 배치합니다.
+            
             int* tempComponents = m->coeff[s];
             m->coeff[s] = components;
             components = tempComponents;
@@ -105,8 +100,53 @@ void addEquation(sparseMatrix* m, int* components, int numComponents, block b) {
     }
 }
 
-// 행렬이 완전히 채워졌는지 확인합니다.
-bool matrixDetermined(sparseMatrix* m) {
+int* xorRow(sparseMatrix *m, int s, int *indices, block *b, size_t indices_len, size_t *new_indices_len) {
+
+    xor_block(b, &m->v[s]);
+
+    int *newIndices = malloc((indices_len + 100) * sizeof(int)); 
+    *new_indices_len = 0;
+
+    int *coeffs = m->coeff[s];
+    size_t i = 0, j = 0;
+    size_t coeffs_len = 0;
+    
+    while (coeffs[coeffs_len] != -1) {
+        coeffs_len++;
+    }
+
+    while (i < coeffs_len && j < indices_len) {
+        int index = indices[j];
+        if (coeffs[i] == index) {
+            i++;
+            j++;
+        } else if (coeffs[i] < index) {
+            newIndices[*new_indices_len] = coeffs[i];
+            (*new_indices_len)++;
+            i++;
+        } else {
+            newIndices[*new_indices_len] = index;
+            (*new_indices_len)++;
+            j++;
+        }
+    }
+
+    while (i < coeffs_len) {
+        newIndices[*new_indices_len] = coeffs[i];
+        (*new_indices_len)++;
+        i++;
+    }
+
+    while (j < indices_len) {
+        newIndices[*new_indices_len] = indices[j];
+        (*new_indices_len)++;
+        j++;
+    }
+
+    return newIndices;
+}
+
+bool determined(sparseMatrix* m) {
     for (int i = 0; i < m->numRows; i++) {
         if (m->coeff[i] == NULL || m->coeff[i][0] != i) {
             return false;
@@ -115,8 +155,7 @@ bool matrixDetermined(sparseMatrix* m) {
     return true;
 }
 
-// 행렬의 가우스 소거법을 수행합니다.
-void matrixReduce(sparseMatrix* m) {
+void Reduce(sparseMatrix* m) {
     for (int i = m->numRows - 1; i >= 0; i--) {
         for (int j = 0; j < i; j++) {
             int* ci = m->coeff[i];
@@ -128,14 +167,12 @@ void matrixReduce(sparseMatrix* m) {
                 }
             }
         }
-        // 모든 행에서 선행 계수를 제외한 모든 항을 제거합니다.
         m->coeff[i] = (int*)realloc(m->coeff[i], sizeof(int));
         m->coeff[i][0] = i;
     }
 }
 
-// 재구성된 데이터를 반환합니다.
-uint8_t* matrixReconstruct(sparseMatrix* m, int totalLength, int lenLong, int lenShort, int numLong, int numShort) {
+uint8_t* Reconstruct(sparseMatrix* m, int totalLength, int lenLong, int lenShort, int numLong, int numShort) {
     uint8_t* out = (uint8_t*)malloc(totalLength * sizeof(uint8_t));
     int offset = 0;
     

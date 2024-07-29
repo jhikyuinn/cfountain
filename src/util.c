@@ -4,15 +4,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "constants.c"
 
-// 작은 소수 배열 (primes) 정의
-static const int smallPrimes[] = {
-    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
-    73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157,
-    163, 167, 173, 179, 181, 191
-};
 
-// solitonDistribution은 soliton 분포를 위한 CDF를 반환합니다.
 void solitonDistribution(int n, double **cdf, int *size) {
     *size = n + 1;
     *cdf = (double *)malloc(*size * sizeof(double));
@@ -23,7 +17,6 @@ void solitonDistribution(int n, double **cdf, int *size) {
     }
 }
 
-// robustSolitonDistribution은 robust soliton 분포를 위한 CDF를 반환합니다.
 void robustSolitonDistribution(int n, int m, double delta, double **cdf, int *size) {
     *size = n + 1;
     *cdf = (double *)malloc(*size * sizeof(double));
@@ -51,7 +44,6 @@ void robustSolitonDistribution(int n, int m, double delta, double **cdf, int *si
     free(pdf);
 }
 
-// onlineSolitonDistribution은 온라인 코드에 대한 soliton-like 분포를 반환합니다.
 void onlineSolitonDistribution(double eps, double **cdf, int *size) {
     double f = ceil(log(eps * eps / 4) / log(1 - (eps / 2)));
     *size = (int)f + 1;
@@ -67,7 +59,6 @@ void onlineSolitonDistribution(double eps, double **cdf, int *size) {
     }
 }
 
-// pickDegree는 cdf에서 r보다 큰 가장 작은 인덱스를 반환합니다.
 int pickDegree(double r, double *cdf, int size) {
     int low = 1, high = size - 1;
     while (low < high) {
@@ -81,7 +72,6 @@ int pickDegree(double r, double *cdf, int size) {
     return low;
 }
 
-// sampleUniform은 [0, max)에서 num 개의 숫자를 균등하게 선택합니다.
 void sampleUniform(int num, int max, int **picks, int *size) {
     if (num >= max) {
         *size = max;
@@ -109,7 +99,6 @@ void sampleUniform(int num, int max, int **picks, int *size) {
     qsort(*picks, num, sizeof(int), (int (*)(const void *, const void *))strcmp);
 }
 
-// partition은 RFC 5053 S.5.3.1.2의 블록 분할 함수입니다.
 void partition(int i, int j, int *il, int *is, int *jl, int *js) {
     *il = (int)ceil((double)i / j);
     *is = (int)floor((double)i / j);
@@ -124,7 +113,6 @@ void partition(int i, int j, int *il, int *is, int *jl, int *js) {
     }
 }
 
-// factorial은 입력 인수 x의 팩토리얼을 계산합니다.
 int factorial(int x) {
     int f = 1;
     for (int i = 1; i <= x; i++) {
@@ -133,12 +121,10 @@ int factorial(int x) {
     return f;
 }
 
-// centerBinomial은 choose(x, ceil(x/2))를 계산합니다.
 int centerBinomial(int x) {
     return choose(x, x / 2);
 }
 
-// choose는 n choose k를 계산합니다.
 int choose(int n, int k) {
     if (k > n / 2) {
         k = n - k;
@@ -171,12 +157,10 @@ int choose(int n, int k) {
     return f;
 }
 
-// bitSet는 x에서 b번째 비트가 설정되어 있는지 반환합니다.
-bool bitSet(uint x, uint b) {
+bool bitSet(uint32_t x, uint32_t b) {
     return (x >> b) & 1 == 1;
 }
 
-// bitsSet는 x에서 설정된 비트의 수를 반환합니다.
 int bitsSet(uint64_t x) {
     x -= (x >> 1) & 0x5555555555555555;
     x = (x & 0x3333333333333333) + ((x >> 2) & 0x3333333333333333);
@@ -184,12 +168,10 @@ int bitsSet(uint64_t x) {
     return (int)((x * 0x0101010101010101) >> 56);
 }
 
-// grayCode는 입력 인수의 Gray 코드를 계산합니다.
 uint64_t grayCode(uint64_t x) {
     return (x >> 1) ^ x;
 }
 
-// buildGraySequence는 정확히 b 비트가 설정된 "length"개의 Gray 번호 시퀀스를 반환합니다.
 void buildGraySequence(int length, int b, int **sequence, int *size) {
     *size = length;
     *sequence = (int *)malloc(length * sizeof(int));
@@ -207,7 +189,6 @@ void buildGraySequence(int length, int b, int **sequence, int *size) {
     }
 }
 
-// isPrime는 x가 소수인지 테스트합니다.
 bool isPrime(int x) {
     for (int i = 0; i < sizeof(smallPrimes) / sizeof(smallPrimes[0]); i++) {
         int p = smallPrimes[i];
@@ -221,7 +202,6 @@ bool isPrime(int x) {
     return true;
 }
 
-// smallestPrimeGreaterOrEqual은 x보다 크거나 같은 가장 작은 소수를 반환합니다.
 int smallestPrimeGreaterOrEqual(int x) {
     int len = sizeof(smallPrimes) / sizeof(smallPrimes[0]);
     if (x <= smallPrimes[len - 1]) {
